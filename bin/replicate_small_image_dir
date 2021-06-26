@@ -1,37 +1,57 @@
 #!/usr/bin/env bash
-set -u
-readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+set -eu
+# readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 readonly ORIG_LINK="0_original"
-readonly DEBUG=1
+readonly RSID_DEBUG=${RSID_DEBUG:-0}
+TMPDIR=${TMPDIR:-${XDG_RUNTIME_DIR:-/tmp}}
+DIR_LIST="$TMPDIR"/dir_list
+trap 'rm -f "$TMPDIR"/dir_list' EXIT
+
+dir_list () {
+  local _src="$1" ;shift
+  find "$_src" -type f -iname '*.jpg' -o -iname '*.png' |
+      sed "s:^$_src::"  |
+      sed 's:/[^/]*$::' |
+      awk '!a[$1]++'
+}
+
+log_info () {
+  printf "$(date "+%F_%T ")"'[INFO] %s\n' "$1" 2>&1
+}
 
 main () {
-  local _src="$1" ;shift
-  local _dst="$1" ;shift
+  local _src="${1%/}" ;shift
+  local _dst="${1%/}" ;shift
+  local _exec=
+  dir_list "$_src" > "$DIR_LIST"
+  if [[ $RSID_DEBUG == 1 ]];then
+    _exec="cat"
+  else
+    _exec="sh"
+  fi
   ## Create dst dirs
   while read -r d;
   do
-    if [[ $DEBUG == 1 ]];then
-      echo mkdir -p "$_dst$d"
-      echo ln -s "$_src$d" "$_dst$d/$ORIG_LINK"
-    else
-      mkdir -p "$_dst$d"
-      ln -s "$_src$d" "$_dst$d/$ORIG_LINK"
-    fi
-  done < <(find "$_src" -type f -iname '*.jpg' -o -iname '*.png' |
-    sed "s:^$_src::"  |
-    sed 's:/[^/]*$::' |
-    awk '!a[$1]++')
+    local _dstdir="$_dst$d"
+    local _srcdir="$_src$d"
+    _srcdir=$(realpath "$_srcdir")
+    log_info "Create $_dstdir"
+    echo "mkdir -p ${_dstdir@Q}" | $_exec
+    log_info "Create simlink $_dstdir/$ORIG_LINK"
+    echo "ln -s ${_srcdir@Q} ${_dstdir@Q}/$ORIG_LINK" | $_exec
+  done < "$DIR_LIST"
   ## Create small files
   while read -r d;
   do
-    if [[ $DEBUG == 1 ]];then
-      echo mkdir -p "$_dst$d"
-      echo ln -s "$_src$d" "$_dst$d/$ORIG_LINK"
-    else
-      mkdir -p "$_dst$d"
-      ln -s "$_src$d" "$_dst$d/$ORIG_LINK"
-    fi
-  done < <(find "$_src" -type f -iname '*.jpg' -o -iname '*.png' | sed "s:^$_src::")
+    local _dstdir="$_dst$d"
+    local _srcdir="$_src$d"
+    while read -r f;
+    do
+      local _newfile="$_dstdir${f#$_srcdir}"
+      log_info "Resize ${f@Q} to ${_newfile@Q}"
+      echo "convert -resize '300^>' ${f@Q} ${_newfile@Q}" | $_exec
+    done < <(find "$_srcdir" -type f -iname '*.jpg' -o -iname '*.png')
+  done < "$DIR_LIST"
 }
 
 main ${1+"$@"}
