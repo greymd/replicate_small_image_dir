@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -u
+readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+readonly ORIG_LINK="0_original"
+readonly DEBUG=1
+
+main () {
+  local _src="$1" ;shift
+  local _dst="$1" ;shift
+  ## Create dst dirs
+  while read -r d;
+  do
+    if [[ $DEBUG == 1 ]];then
+      echo mkdir -p "$_dst$d"
+      echo ln -s "$_src$d" "$_dst$d/$ORIG_LINK"
+    else
+      mkdir -p "$_dst$d"
+      ln -s "$_src$d" "$_dst$d/$ORIG_LINK"
+    fi
+  done < <(find "$_src" -type f -iname '*.jpg' -o -iname '*.png' |
+    sed "s:^$_src::"  |
+    sed 's:/[^/]*$::' |
+    awk '!a[$1]++')
+  ## Create small files
+  while read -r d;
+  do
+    if [[ $DEBUG == 1 ]];then
+      echo mkdir -p "$_dst$d"
+      echo ln -s "$_src$d" "$_dst$d/$ORIG_LINK"
+    else
+      mkdir -p "$_dst$d"
+      ln -s "$_src$d" "$_dst$d/$ORIG_LINK"
+    fi
+  done < <(find "$_src" -type f -iname '*.jpg' -o -iname '*.png' | sed "s:^$_src::")
+}
+
+main ${1+"$@"}
