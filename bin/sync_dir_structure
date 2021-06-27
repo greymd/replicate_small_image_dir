@@ -13,9 +13,19 @@ log_info () {
   printf "$(date "+%F_%T ")"'[INFO] %s\n' "$1" >&2
 }
 
+## From: https://superuser.com/questions/140590/how-to-calculate-a-relative-path-from-two-absolute-paths-in-linux-shell
+relative_path_from_to() {
+  path1=${1%\/}
+  path2=${2%\/}
+  common=$(printf '%s\x0%s' "${path1}" "${path2}" | sed 's/\(.*\/\).*\x0\1.*/\1/')
+  up=$(grep -o "/" <<< "${path1#$common}" | wc -l)
+  prefix=""; for ((i=0; i<=up; i++)); do prefix="$prefix../"; done
+  printf '%s\n' "$prefix${2#$common}"
+}
+
 main () {
-  local _src="${1%/}" ;shift
-  local _dst="${1%/}" ;shift
+  local _src="${1%\/}" ;shift
+  local _dst="${1%\/}" ;shift
   local _exec=
   if [[ $SDS_DEBUG == 1 ]];then
     _exec="cat"
@@ -44,6 +54,8 @@ main () {
   do
     local _dstdir="$_dst$d"
     local _srcdir="$_src$d"
+    local _relative_path=
+    _relative_path="$(relative_path_from_to "$_dstdir" "$_srcdir")"
     _srcdir=$(realpath "$_srcdir")
     [[ -d "${_dstdir}" ]] || {
       log_info "Create dir $_dstdir"
@@ -51,7 +63,7 @@ main () {
     }
     [[ -e "$_dstdir/$ORIG_LINK" ]] || {
       log_info "Create simlink $_dstdir/$ORIG_LINK"
-      echo "ln -s ${_srcdir@Q} ${_dstdir@Q}/$ORIG_LINK" | $_exec
+      echo "ln -s ${_relative_path@Q} ${_dstdir@Q}/$ORIG_LINK" | $_exec
     }
   done < <(comm -23 "$TMPDIR/src_list" "$TMPDIR/dst_list")
   cat "$TMPDIR"/src_list
