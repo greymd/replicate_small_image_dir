@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eu
+set -u
 readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 readonly RSID_DEBUG=${RSID_DEBUG:-0}
 TMPDIR=${TMPDIR:-${XDG_RUNTIME_DIR:-/tmp}}
