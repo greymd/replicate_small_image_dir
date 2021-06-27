@@ -35,7 +35,7 @@ main () {
       local _newfile="$_dstdir${f#$_srcdir}"
       log_info "Resize ${f@Q} to ${_newfile@Q}"
       echo "convert -resize '300^>' ${f@Q} ${_newfile@Q}" | $_exec
-    done < <(find "$_srcdir" -type f -maxdepth 1 -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png')
+    done < <(find "$_srcdir" \( ! -regex '.*/\..*' \) -type f -maxdepth 1 -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png')
     ## sync modified timestamp to run future scans efficiently.
     touch -m -d "$(stat -c '%y' "$_srcdir")" "$_dstdir"
   done < "$DIR_LIST"

@@ -36,10 +36,10 @@ main () {
     log_info "Create dir $_dst"
     mkdir "$_dst"
   }
-  find "$_src" -type d |
+  find "$_src" \( ! -regex '.*/\..*' \) -type d |
     sed "s:^$_src::"  |
     sort > "$TMPDIR/src_list"
-  find "$_dst" -type d |
+  find "$_dst" \( ! -regex '.*/\..*' \) -type d |
     sed "s:^$_dst::"  |
     sort > "$TMPDIR/dst_list"
   ## Delete dir
