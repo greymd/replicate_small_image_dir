@@ -1,6 +1,9 @@
 # replicate_small_image_dir
 
-## Fr Developer
+## Dependencies
+- rsync
+
+## For Developer
 
 Debug mode
 ```
