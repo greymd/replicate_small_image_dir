@@ -42,14 +42,14 @@ main () {
   find "$_dst" \( ! -regex '.*/\..*' \) -type d |
     sed "s:^$_dst::"  |
     sort > "$TMPDIR/dst_list"
-  ## Delete dir
+  ## Delete dir which exists dst only
   while read -r d;
   do
     local _dstdir="$_dst$d"
     log_info "Delete $d"
     echo "rm -rf ${_dstdir@Q}" | $_exec
   done < <(comm -13 "$TMPDIR/src_list" "$TMPDIR/dst_list")
-  ## Create dir
+  ## Create dir which exists src only
   while read -r d;
   do
     local _dstdir="$_dst$d"
