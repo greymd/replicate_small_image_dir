@@ -53,9 +53,18 @@ main () {
   while read -r d; do
     local _dstdir="$_dst$d"
     local _srcdir="$_src$d"
+    local rsync_res=
+    local rsync_opts="-av --delete --existing --ignore-existing"
+    if [[ $SDS_DEBUG == 1 ]]; then
+      rsync_opts="--dry-run $rsync_opts"
+    fi
     # Delete files which exists in dst dir only (Note: It does not create/copy any files!)
-    if rsync -av --delete --existing --ignore-existing --exclude "$ORIG_LINK" "${_srcdir%/}/" "${_dstdir%/}/" | grep -q deleting; then
-      touch -m "${_srcdir}"
+    # shellcheck disable=SC2086
+    rsync_res="$(rsync $rsync_opts --exclude "$ORIG_LINK" "${_srcdir%/}/" "${_dstdir%/}/")"
+    if grep -q deleting <<<"$rsync_res"; then
+      log_info "== Delete waste files in $_dstdir =="
+      log_info "$rsync_res"
+      echo "touch -m ${_srcdir@Q}" | $_exec
     fi
   done < <(comm -12 "$TMPDIR/src_list" "$TMPDIR/dst_list")
   ## Create dir which exists in src only
