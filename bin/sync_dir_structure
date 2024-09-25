@@ -57,7 +57,7 @@ main () {
     if rsync -av --delete --existing --ignore-existing --exclude "$ORIG_LINK" "${_srcdir%/}/" "${_dstdir%/}/" | grep -q deleting; then
       touch -m "${_srcdir}"
     fi
-  done < <(comm -13 "$TMPDIR/src_list" "$TMPDIR/dst_list")
+  done < <(comm -12 "$TMPDIR/src_list" "$TMPDIR/dst_list")
   ## Create dir which exists in src only
   while read -r d;
   do
