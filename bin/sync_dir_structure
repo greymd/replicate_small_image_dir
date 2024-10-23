@@ -61,10 +61,16 @@ main () {
     if [[ $SDS_DEBUG == 1 ]]; then
       rsync_opts="--dry-run $rsync_opts"
     fi
+    local _srcdir_mtime_orig=
+    local _dstdir_mtime_orig=
+    _srcdir_mtime_orig="$(stat -c '%y' "$_srcdir")"
+    _dstdir_mtime_orig="$(stat -c '%y' "$_dstdir")"
     # Delete files which exists in dst dir only (Note: It does not create/copy any files!)
-    # !! NOTE: This rsync updates metadata of directory
     # shellcheck disable=SC2086
     rsync_res="$(rsync $rsync_opts --exclude "$ORIG_LINK" "${_srcdir%/}/" "${_dstdir%/}/")"
+    # rsync command update mtime. Restore them.
+    echo "touch -m -d ${_srcdir_mtime_orig@Q} ${_srcdir@Q}" | $_exec
+    echo "touch -m -d ${_dstdir_mtime_orig@Q} ${_dstdir@Q}" | $_exec
     if grep -q deleting <<<"$rsync_res"; then
       log_info "== Delete waste files in $_dstdir =="
       log_info "$rsync_res"
