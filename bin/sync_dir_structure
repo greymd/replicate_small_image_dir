@@ -7,7 +7,7 @@ set -u
 readonly ORIG_LINK="0_original"
 readonly SDS_DEBUG=${SDS_DEBUG:-0}
 TMPDIR=${TMPDIR:-${XDG_RUNTIME_DIR:-/tmp}}
-trap 'rm -f "$TMPDIR"/src_list "$TMPDIR"/dst_list' EXIT
+# trap 'rm -f "$TMPDIR"/src_list "$TMPDIR"/dst_list' EXIT
 
 log_info () {
   printf "$(date "+%F_%T ")"'[INFO] %s\n' "$1" >&2
@@ -38,9 +38,11 @@ main () {
   }
   find "$_src" \( ! -regex '.*/\..*' \) -type d |
     sed "s:^$_src::"  |
+    awk NF |
     sort > "$TMPDIR/src_list"
   find "$_dst" \( ! -regex '.*/\..*' \) -type d |
     sed "s:^$_dst::"  |
+    awk NF |
     sort > "$TMPDIR/dst_list"
   ## Delete dir which exists in dst only
   while read -r d;
@@ -53,12 +55,14 @@ main () {
   while read -r d; do
     local _dstdir="$_dst$d"
     local _srcdir="$_src$d"
+    # echo "_dstdir = $_dstdir , _srcdir = $_srcdir"
     local rsync_res=
     local rsync_opts="-av --delete --existing --ignore-existing"
     if [[ $SDS_DEBUG == 1 ]]; then
       rsync_opts="--dry-run $rsync_opts"
     fi
     # Delete files which exists in dst dir only (Note: It does not create/copy any files!)
+    # !! NOTE: This rsync updates metadata of directory
     # shellcheck disable=SC2086
     rsync_res="$(rsync $rsync_opts --exclude "$ORIG_LINK" "${_srcdir%/}/" "${_dstdir%/}/")"
     if grep -q deleting <<<"$rsync_res"; then
